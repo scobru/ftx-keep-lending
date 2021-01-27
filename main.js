@@ -25,19 +25,38 @@ const getFreeBalanceAndLending = async (coins) => {
       console.log(new Date(), coin, 'freeBalance', free, 'totalBalance', total, '=>', fixTotal)
 
       if (total > 0) {
-        const offersResult = await ftx.request({
-          method: 'POST',
-          path: '/spot_margin/offers',
-          data: {
-            coin: coin,
-            size: fixTotal,
-            rate: 0.000005, // minimun hourly rate => (4.38% / year)
-          },
+		  getLendingRate =  await ftx.request({
+          method: 'GET',
+          path: '/spot_margin/lending_rates',
+     
         })
+	
+		getLendingRate = getLendingRate['result']
 
-        console.log(new Date(), 'offersResult', offersResult, fixTotal)
-      }
-    }
+		   
+
+		for (i = 0; i < 40; i++) {
+			 
+	  		if (getLendingRate[i]['coin'] == coin){
+				coinRate = getLendingRate[i]['estimate'] 
+					const offersResult = await ftx.request({
+	          			method: 'POST',
+	          			path: '/spot_margin/offers',
+	          			data: {
+	            				coin: coin,
+	            				size: fixTotal,
+	            				rate: coinRate, // minimun hourly rate => (4.38% / year)
+	          			},
+	        		})
+
+	        	console.log(new Date(), 'offersResult', offersResult, fixTotal)
+	       	}
+
+			}
+		
+	}
+	}
+	    
   } catch (e) {
     console.log(e.message)
   }
@@ -49,8 +68,10 @@ if (process.env.LENDING_COIN) {
 }
 
 console.log('Before job instantiation')
-const job = new CronJob('45 * * * *', function () {
+const job = new CronJob('30 * * * * *', function()  {
   getFreeBalanceAndLending(leading_coins)
 })
 console.log('After job instantiation')
+getFreeBalanceAndLending(leading_coins)
+
 job.start()
